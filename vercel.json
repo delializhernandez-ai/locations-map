@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist",
+  "env": {
+    "VITE_GOOGLE_MAPS_API_KEY": "@google-maps-api-key",
+    "VITE_HUBSPOT_API_KEY": "@hubspot-api-key",
+    "VITE_HUBSPOT_OBJECT_TYPE": "@hubspot-object-type"
+  }
+}
