@@ -85,14 +85,18 @@
   padding: 8px 10px;
 }
 
-.vertical-checkbox {
+.filter-container label.vertical-checkbox {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  text-align: left;
   gap: 8px;
   font-size: 14px;
+  font-weight: 400;
   color: #333;
   cursor: pointer;
   padding: 4px 2px;
+  margin-bottom: 0;
   border-radius: 3px;
 }
 
