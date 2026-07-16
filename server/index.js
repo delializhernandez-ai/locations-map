@@ -1,8 +1,22 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-dotenv.config({ path: '../.env.local' });
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '..', '.env.local') });
+
+async function loadGeocodeCache() {
+  try {
+    const filePath = path.resolve(__dirname, '..', 'data', 'geocoded-locations.json');
+    const raw = await readFile(filePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,10 +40,11 @@ app.get('/api/locations', async (req, res) => {
     let allLocations = [];
     let after = null;
     let pageNum = 1;
+    const geocodeCache = await loadGeocodeCache();
 
     // Paginate through all locations
     while (true) {
-      let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,city,property_state,zip_postal_code,latitude,longitude,location_status,brand,location_company_name`;
+      let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,property_city,property_state,property_zip_code,location_status,brand,location_company_name`;
       if (after) {
         url += `&after=${after}`;
       }
@@ -54,7 +69,15 @@ app.get('/api/locations', async (req, res) => {
       }
 
       const data = await response.json();
-      allLocations.push(...(data.results || []));
+      const results = (data.results || []).map((record) => {
+        const cached = geocodeCache[record.id];
+        if (cached) {
+          record.properties.latitude = cached.lat;
+          record.properties.longitude = cached.lng;
+        }
+        return record;
+      });
+      allLocations.push(...results);
       console.log(`✅ Page ${pageNum}: ${data.results?.length || 0} locations`);
 
       // Check if there are more pages

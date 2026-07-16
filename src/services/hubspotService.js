@@ -31,38 +31,16 @@ const convertToLocationObject = (hubspotObject) => {
     name: props.property_name || '',
     address: props.property_address || '',
     address2: props.property_address_2 || '',
-    city: props.city || '',
+    city: props.property_city || '',
     state: normalizeState(props.property_state || ''),
     status: props.location_status || '',
     vertical: props.brand || '',
     companyName: props.location_company_name || '',
-    zip: props.zip_postal_code || '',
+    zip: props.property_zip_code || '',
     lat: props.latitude ? parseFloat(props.latitude) : null,
     lng: props.longitude ? parseFloat(props.longitude) : null,
     rawProperties: props,
   };
-};
-
-const geocodeAddress = async (address, city, state, zip) => {
-  try {
-    const fullAddress = [address, city, state, zip].filter(Boolean).join(', ');
-    const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        fullAddress
-      )}&key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}`
-    );
-    const data = await response.json();
-
-    if (data.results && data.results[0]) {
-      return {
-        lat: data.results[0].geometry.location.lat,
-        lng: data.results[0].geometry.location.lng,
-      };
-    }
-  } catch (error) {
-    console.error('Geocoding error:', error);
-  }
-  return { lat: null, lng: null };
 };
 
 export const fetchLocations = async () => {
@@ -80,23 +58,11 @@ export const fetchLocations = async () => {
     const data = await response.json();
     console.log('Fetched locations:', data);
 
-    let locations = data.results.map(convertToLocationObject);
+    const locations = data.results.map(convertToLocationObject);
 
-    locations = await Promise.all(
-      locations.map(async (location) => {
-        if (!location.lat || !location.lng) {
-          const { lat, lng } = await geocodeAddress(
-            location.address,
-            location.city,
-            location.state,
-            location.zip
-          );
-          return { ...location, lat, lng };
-        }
-        return location;
-      })
-    );
-
+    // Coordinates are geocoded and stored on the HubSpot record ahead of
+    // time (see scripts/geocode-backfill.js) so no per-load geocoding is
+    // needed here. Locations still missing coordinates are simply skipped.
     return locations.filter((loc) => loc.lat && loc.lng);
   } catch (error) {
     console.error('Error fetching locations:', error);

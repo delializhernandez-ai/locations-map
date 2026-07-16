@@ -1,5 +1,30 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const HUBSPOT_API_KEY = process.env.VITE_HUBSPOT_API_KEY;
 const HUBSPOT_OBJECT_TYPE = process.env.VITE_HUBSPOT_OBJECT_TYPE || '2-16842375';
+
+// Fetching ~6,500 records means ~65 sequential HubSpot pages; the default
+// 10s Vercel timeout isn't enough, so raise it to fit the full pagination.
+export const config = {
+  maxDuration: 60,
+};
+
+// HubSpot has no latitude/longitude property on this object, so geocoded
+// coordinates live in a JSON cache (see scripts/geocode-backfill.js) keyed
+// by record id, and get merged into each result here.
+async function loadGeocodeCache() {
+  try {
+    const filePath = path.resolve(__dirname, '..', 'data', 'geocoded-locations.json');
+    const raw = await readFile(filePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -10,10 +35,11 @@ export default async function handler(req, res) {
     let allLocations = [];
     let after = null;
     let pageNum = 1;
+    const geocodeCache = await loadGeocodeCache();
 
     // Paginate through all locations
     while (true) {
-      let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,city,property_state,zip_postal_code,latitude,longitude,location_status,brand,location_company_name`;
+      let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,property_city,property_state,property_zip_code,location_status,brand,location_company_name`;
       if (after) {
         url += `&after=${after}`;
       }
@@ -35,7 +61,15 @@ export default async function handler(req, res) {
       }
 
       const data = await response.json();
-      allLocations.push(...(data.results || []));
+      const results = (data.results || []).map((record) => {
+        const cached = geocodeCache[record.id];
+        if (cached) {
+          record.properties.latitude = cached.lat;
+          record.properties.longitude = cached.lng;
+        }
+        return record;
+      });
+      allLocations.push(...results);
 
       if (data.paging?.next?.after) {
         after = data.paging.next.after;
