@@ -70,14 +70,3 @@ export const fetchLocations = async () => {
   }
 };
 
-export const fetchLocationStatusOptions = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/location-status-options`);
-    if (!response.ok) throw new Error('Failed to fetch status options');
-    const data = await response.json();
-    return data.options || [];
-  } catch (error) {
-    console.error('Error fetching status options:', error);
-    return ['Active', 'Inactive', 'Archived', 'Pending'];
-  }
-};

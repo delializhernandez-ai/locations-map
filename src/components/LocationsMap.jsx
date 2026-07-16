@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { GoogleMap, LoadScript, InfoWindow } from '@react-google-maps/api';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
-import { fetchLocations, fetchLocationStatusOptions } from '../services/hubspotService';
+import { fetchLocations } from '../services/hubspotService';
 import './LocationsMap.css';
 
 const LocationsMap = () => {
@@ -33,12 +33,10 @@ const LocationsMap = () => {
     const loadLocations = async () => {
       try {
         setLoading(true);
-        const [data, statuses] = await Promise.all([
-          fetchLocations(),
-          fetchLocationStatusOptions(),
-        ]);
-        // Vertical options come from the loaded data itself — every record
-        // already carries its brand, so no extra API round-trip is needed.
+        const data = await fetchLocations();
+        // Status and vertical options come from the loaded data itself, so
+        // the dropdowns always reflect values that actually exist in HubSpot.
+        const statuses = [...new Set(data.map((loc) => loc.status).filter(Boolean))].sort();
         const verticals = [...new Set(data.map((loc) => loc.vertical).filter(Boolean))].sort();
         setLocations(data);
         setFilteredLocations(data);
@@ -73,7 +71,9 @@ const LocationsMap = () => {
       filtered = filtered.filter((loc) => loc.state === filterState);
     }
 
-    if (filterStatus) {
+    if (filterStatus === '__none__') {
+      filtered = filtered.filter((loc) => !loc.status);
+    } else if (filterStatus) {
       filtered = filtered.filter((loc) => loc.status === filterStatus);
     }
 
@@ -175,6 +175,7 @@ const LocationsMap = () => {
                 {status}
               </option>
             ))}
+            <option value="__none__">(No Status)</option>
           </select>
         </div>
 

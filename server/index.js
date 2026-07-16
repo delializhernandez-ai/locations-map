@@ -159,33 +159,6 @@ app.get('/api/locations', async (req, res) => {
   }
 });
 
-// Get Location Status enum options
-app.get('/api/location-status-options', async (req, res) => {
-  try {
-    const url = `https://api.hubapi.com/crm/v3/objects/2-16842375?limit=1`;
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${HUBSPOT_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return res.status(500).json({ error: 'Failed to fetch property options' });
-    }
-
-    // Common location statuses - fallback if we can't get from HubSpot
-    const defaultStatuses = ['Active', 'Inactive', 'Archived', 'Pending'];
-
-    res.json({ options: defaultStatuses });
-  } catch (error) {
-    console.error('Error fetching status options:', error);
-    const defaultStatuses = ['Active', 'Inactive', 'Archived', 'Pending'];
-    res.json({ options: defaultStatuses });
-  }
-});
-
 app.listen(PORT, () => {
   console.log(`\n🚀 Server running at http://localhost:${PORT}`);
   console.log(`📍 API endpoint: http://localhost:${PORT}/api/locations\n`);
