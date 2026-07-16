@@ -2,8 +2,8 @@ name: Geocode backfill
 
 on:
   schedule:
-    # Midnight UTC daily
-    - cron: '0 0 * * *'
+    # Daily around midnight US Eastern (04:00 UTC = midnight EDT / 11 PM EST)
+    - cron: '0 4 * * *'
   workflow_dispatch: {}
 
 jobs:
