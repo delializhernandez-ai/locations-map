@@ -180,39 +180,32 @@ const LocationsMap = () => {
         </div>
 
         <div className="filter-container">
-          <label htmlFor="vertical-filter">Filter by Business Vertical:</label>
-          <select
-            id="vertical-filter"
-            multiple
-            value={filterVerticals}
-            onChange={(e) => {
-              const selected = Array.from(e.target.selectedOptions, (option) => option.value);
-              setFilterVerticals(selected);
-            }}
-            className="filter-select filter-multiselect"
-          >
+          <label>Filter by Business Vertical:</label>
+          <div className="vertical-checkboxes">
             {verticalOptions.map((vertical) => (
-              <option key={vertical} value={vertical}>
+              <label key={vertical} className="vertical-checkbox">
+                <input
+                  type="checkbox"
+                  checked={filterVerticals.includes(vertical)}
+                  onChange={(e) => {
+                    setFilterVerticals(
+                      e.target.checked
+                        ? [...filterVerticals, vertical]
+                        : filterVerticals.filter((v) => v !== vertical)
+                    );
+                  }}
+                />
                 {vertical}
-              </option>
+              </label>
             ))}
-          </select>
+          </div>
           {filterVerticals.length > 0 && (
-            <div className="selected-filters">
-              {filterVerticals.map((vertical) => (
-                <span key={vertical} className="filter-tag">
-                  {vertical}
-                  <button
-                    onClick={() =>
-                      setFilterVerticals(filterVerticals.filter((v) => v !== vertical))
-                    }
-                    className="filter-tag-close"
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-            </div>
+            <button
+              onClick={() => setFilterVerticals([])}
+              className="clear-verticals"
+            >
+              Clear selection
+            </button>
           )}
         </div>
 
