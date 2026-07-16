@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { get, put } from '@vercel/blob';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,60 +27,99 @@ async function loadGeocodeCache() {
   }
 }
 
+// The full location list (names/addresses/statuses) is expensive to fetch
+// live from HubSpot (~65 sequential paginated requests), so it's cached in
+// Vercel Blob for a few minutes at a time instead of refetched on every
+// page load. Coordinates are still merged in fresh from the geocode cache
+// so the TTL only affects HubSpot-sourced fields.
+const LIST_CACHE_PATHNAME = 'locations-cache.json';
+const LIST_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function readListCache() {
+  try {
+    const result = await get(LIST_CACHE_PATHNAME, { access: 'private' });
+    if (result.statusCode !== 200) return null;
+    const text = await new Response(result.stream).text();
+    const parsed = JSON.parse(text);
+    if (Date.now() - parsed.fetchedAt > LIST_CACHE_TTL_MS) return null;
+    return parsed.results;
+  } catch {
+    return null;
+  }
+}
+
+async function writeListCache(results) {
+  try {
+    await put(LIST_CACHE_PATHNAME, JSON.stringify({ fetchedAt: Date.now(), results }), {
+      access: 'private',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: 'application/json',
+    });
+  } catch (error) {
+    console.error('Failed to write list cache:', error.message);
+  }
+}
+
+async function fetchAllFromHubSpot() {
+  const allLocations = [];
+  let after = null;
+
+  while (true) {
+    let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,property_city,property_state,property_zip_code,location_status,brand,location_company_name`;
+    if (after) {
+      url += `&after=${after}`;
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${HUBSPOT_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HubSpot API Error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    allLocations.push(...(data.results || []));
+
+    if (data.paging?.next?.after) {
+      after = data.paging.next.after;
+    } else {
+      break;
+    }
+  }
+
+  return allLocations;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    let allLocations = [];
-    let after = null;
-    let pageNum = 1;
     const geocodeCache = await loadGeocodeCache();
 
-    // Paginate through all locations
-    while (true) {
-      let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,property_city,property_state,property_zip_code,location_status,brand,location_company_name`;
-      if (after) {
-        url += `&after=${after}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${HUBSPOT_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`HubSpot API Error: ${response.status}`);
-        return res.status(response.status).json({
-          error: `HubSpot API Error: ${response.status}`,
-          details: errorText,
-        });
-      }
-
-      const data = await response.json();
-      const results = (data.results || []).map((record) => {
-        const cached = geocodeCache[record.id];
-        if (cached) {
-          record.properties.latitude = cached.lat;
-          record.properties.longitude = cached.lng;
-        }
-        return record;
-      });
-      allLocations.push(...results);
-
-      if (data.paging?.next?.after) {
-        after = data.paging.next.after;
-        pageNum++;
-      } else {
-        break;
-      }
+    let allLocations = await readListCache();
+    if (!allLocations) {
+      allLocations = await fetchAllFromHubSpot();
+      await writeListCache(allLocations);
     }
 
-    res.json({ results: allLocations, paging: { total: allLocations.length } });
+    const results = allLocations.map((record) => {
+      const cached = geocodeCache[record.id];
+      if (cached) {
+        record.properties.latitude = cached.lat;
+        record.properties.longitude = cached.lng;
+      }
+      return record;
+    });
+
+    res.json({ results, paging: { total: results.length } });
   } catch (error) {
     console.error('Server Error:', error.message);
     res.status(500).json({

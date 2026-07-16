@@ -12,6 +12,7 @@
   "dependencies": {
     "@googlemaps/markerclusterer": "^2.6.2",
     "@react-google-maps/api": "^2.20.8",
+    "@vercel/blob": "^2.6.1",
     "dotenv": "^17.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

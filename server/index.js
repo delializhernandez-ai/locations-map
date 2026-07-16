@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { get, put } from '@vercel/blob';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '..', '.env.local') });
@@ -15,6 +16,37 @@ async function loadGeocodeCache() {
     return JSON.parse(raw);
   } catch {
     return {};
+  }
+}
+
+// Same shared Vercel Blob cache the deployed api/locations.js uses, so the
+// full HubSpot list isn't refetched on every local request either.
+const LIST_CACHE_PATHNAME = 'locations-cache.json';
+const LIST_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function readListCache() {
+  try {
+    const result = await get(LIST_CACHE_PATHNAME, { access: 'private' });
+    if (result.statusCode !== 200) return null;
+    const text = await new Response(result.stream).text();
+    const parsed = JSON.parse(text);
+    if (Date.now() - parsed.fetchedAt > LIST_CACHE_TTL_MS) return null;
+    return parsed.results;
+  } catch {
+    return null;
+  }
+}
+
+async function writeListCache(results) {
+  try {
+    await put(LIST_CACHE_PATHNAME, JSON.stringify({ fetchedAt: Date.now(), results }), {
+      access: 'private',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: 'application/json',
+    });
+  } catch (error) {
+    console.error('Failed to write list cache:', error.message);
   }
 }
 
@@ -35,86 +67,68 @@ if (!HUBSPOT_API_KEY) {
 console.log(`✅ HubSpot API Key configured`);
 console.log(`✅ Object Type: ${HUBSPOT_OBJECT_TYPE}`);
 
-app.get('/api/locations', async (req, res) => {
-  try {
-    let allLocations = [];
-    let after = null;
-    let pageNum = 1;
-    const geocodeCache = await loadGeocodeCache();
+async function fetchAllFromHubSpot() {
+  const allLocations = [];
+  let after = null;
+  let pageNum = 1;
 
-    // Paginate through all locations
-    while (true) {
-      let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,property_city,property_state,property_zip_code,location_status,brand,location_company_name`;
-      if (after) {
-        url += `&after=${after}`;
-      }
-
-      console.log(`📍 Fetching page ${pageNum}...`);
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${HUBSPOT_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ HubSpot API Error: ${response.status} ${response.statusText}`);
-        console.error(`Response: ${errorText}`);
-        return res.status(response.status).json({
-          error: `HubSpot API Error: ${response.status} ${response.statusText}`,
-          details: errorText,
-        });
-      }
-
-      const data = await response.json();
-      const results = (data.results || []).map((record) => {
-        const cached = geocodeCache[record.id];
-        if (cached) {
-          record.properties.latitude = cached.lat;
-          record.properties.longitude = cached.lng;
-        }
-        return record;
-      });
-      allLocations.push(...results);
-      console.log(`✅ Page ${pageNum}: ${data.results?.length || 0} locations`);
-
-      // Check if there are more pages
-      if (data.paging?.next?.after) {
-        after = data.paging.next.after;
-        pageNum++;
-      } else {
-        break;
-      }
+  while (true) {
+    let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,property_city,property_state,property_zip_code,location_status,brand,location_company_name`;
+    if (after) {
+      url += `&after=${after}`;
     }
 
-    // Count locations with valid coordinates
-    const withCoords = allLocations.filter(loc => {
-      const props = loc.properties || {};
-      return props.latitude && props.longitude;
+    console.log(`📍 Fetching page ${pageNum}...`);
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${HUBSPOT_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
     });
 
-    // Show first location's properties for debugging
-    console.log(`\n📊 SUMMARY:`);
-    console.log(`   Total locations: ${allLocations.length}`);
-    console.log(`   With coordinates: ${withCoords.length}`);
-    console.log(`   Missing coordinates: ${allLocations.length - withCoords.length}`);
-
-    if (allLocations.length > 0) {
-      console.log(`\n🔍 ALL PROPERTY NAMES AVAILABLE:`);
-      const firstProps = allLocations[0].properties || {};
-      const propNames = Object.keys(firstProps).sort();
-      console.log(`   ${propNames.join(', ')}`);
-
-      console.log(`\n📋 FIRST LOCATION VALUES:`);
-      propNames.forEach(key => {
-        if (firstProps[key]) console.log(`   ${key}: ${firstProps[key]}`);
-      });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HubSpot API Error: ${response.status} ${response.statusText} ${errorText}`);
     }
-    console.log('');
 
-    res.json({ results: allLocations, paging: { total: allLocations.length } });
+    const data = await response.json();
+    allLocations.push(...(data.results || []));
+    console.log(`✅ Page ${pageNum}: ${data.results?.length || 0} locations`);
+
+    if (data.paging?.next?.after) {
+      after = data.paging.next.after;
+      pageNum++;
+    } else {
+      break;
+    }
+  }
+
+  return allLocations;
+}
+
+app.get('/api/locations', async (req, res) => {
+  try {
+    const geocodeCache = await loadGeocodeCache();
+
+    let allLocations = await readListCache();
+    if (allLocations) {
+      console.log('📦 Serving location list from cache');
+    } else {
+      allLocations = await fetchAllFromHubSpot();
+      await writeListCache(allLocations);
+    }
+
+    const results = allLocations.map((record) => {
+      const cached = geocodeCache[record.id];
+      if (cached) {
+        record.properties.latitude = cached.lat;
+        record.properties.longitude = cached.lng;
+      }
+      return record;
+    });
+
+    res.json({ results, paging: { total: results.length } });
   } catch (error) {
     console.error('❌ Server Error:', error.message);
     res.status(500).json({
