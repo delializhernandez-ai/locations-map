@@ -1,0 +1,46 @@
+name: Geocode backfill
+
+on:
+  schedule:
+    # Midnight UTC daily
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Run geocode backfill
+        env:
+          VITE_HUBSPOT_API_KEY: ${{ secrets.VITE_HUBSPOT_API_KEY }}
+          VITE_HUBSPOT_OBJECT_TYPE: ${{ secrets.VITE_HUBSPOT_OBJECT_TYPE }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+        run: |
+          cat <<EOF > .env.local
+          VITE_HUBSPOT_API_KEY=$VITE_HUBSPOT_API_KEY
+          VITE_HUBSPOT_OBJECT_TYPE=$VITE_HUBSPOT_OBJECT_TYPE
+          VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY
+          EOF
+          node scripts/geocode-backfill.js
+
+      - name: Commit updated cache if changed
+        run: |
+          if git diff --quiet data/geocoded-locations.json; then
+            echo "No new coordinates, nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/geocoded-locations.json
+          git commit -m "Nightly geocode backfill"
+          git push
