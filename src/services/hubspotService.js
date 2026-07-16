@@ -81,15 +81,3 @@ export const fetchLocationStatusOptions = async () => {
     return ['Active', 'Inactive', 'Archived', 'Pending'];
   }
 };
-
-export const fetchBusinessVerticalOptions = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/business-vertical-options`);
-    if (!response.ok) throw new Error('Failed to fetch vertical options');
-    const data = await response.json();
-    return data.options || [];
-  } catch (error) {
-    console.error('Error fetching vertical options:', error);
-    return [];
-  }
-};

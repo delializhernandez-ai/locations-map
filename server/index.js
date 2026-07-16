@@ -165,54 +165,6 @@ app.get('/api/location-status-options', async (req, res) => {
   }
 });
 
-// Get Business Vertical options
-app.get('/api/business-vertical-options', async (req, res) => {
-  try {
-    let allLocations = [];
-    let after = null;
-
-    // Fetch locations to extract unique brand values
-    while (true) {
-      let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=brand`;
-      if (after) {
-        url += `&after=${after}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${HUBSPOT_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HubSpot API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      allLocations.push(...(data.results || []));
-
-      if (data.paging?.next?.after) {
-        after = data.paging.next.after;
-      } else {
-        break;
-      }
-    }
-
-    // Extract unique brand values
-    const verticals = [...new Set(
-      allLocations
-        .map(loc => loc.properties?.brand)
-        .filter(Boolean)
-    )].sort();
-
-    res.json({ options: verticals });
-  } catch (error) {
-    console.error('Error fetching vertical options:', error);
-    res.json({ options: [] });
-  }
-});
-
 app.listen(PORT, () => {
   console.log(`\n🚀 Server running at http://localhost:${PORT}`);
   console.log(`📍 API endpoint: http://localhost:${PORT}/api/locations\n`);

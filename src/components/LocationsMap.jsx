@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { GoogleMap, LoadScript, InfoWindow } from '@react-google-maps/api';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
-import { fetchLocations, fetchLocationStatusOptions, fetchBusinessVerticalOptions } from '../services/hubspotService';
+import { fetchLocations, fetchLocationStatusOptions } from '../services/hubspotService';
 import './LocationsMap.css';
 
 const LocationsMap = () => {
@@ -33,9 +33,13 @@ const LocationsMap = () => {
     const loadLocations = async () => {
       try {
         setLoading(true);
-        const data = await fetchLocations();
-        const statuses = await fetchLocationStatusOptions();
-        const verticals = await fetchBusinessVerticalOptions();
+        const [data, statuses] = await Promise.all([
+          fetchLocations(),
+          fetchLocationStatusOptions(),
+        ]);
+        // Vertical options come from the loaded data itself — every record
+        // already carries its brand, so no extra API round-trip is needed.
+        const verticals = [...new Set(data.map((loc) => loc.vertical).filter(Boolean))].sort();
         setLocations(data);
         setFilteredLocations(data);
         setStatusOptions(statuses);
