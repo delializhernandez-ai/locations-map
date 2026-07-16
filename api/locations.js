@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { get, put } from '@vercel/blob';
+import { waitUntil } from '@vercel/functions';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -29,9 +30,10 @@ async function loadGeocodeCache() {
 
 // The full location list (names/addresses/statuses) is expensive to fetch
 // live from HubSpot (~65 sequential paginated requests), so it's cached in
-// Vercel Blob for a few minutes at a time instead of refetched on every
-// page load. Coordinates are still merged in fresh from the geocode cache
-// so the TTL only affects HubSpot-sourced fields.
+// Vercel Blob. Expired entries are served anyway (stale-while-revalidate)
+// while a background refresh updates the cache, so no visitor ever waits
+// on the full HubSpot crawl. Coordinates are still merged in fresh from
+// the geocode cache so staleness only affects HubSpot-sourced fields.
 const LIST_CACHE_PATHNAME = 'locations-cache.json';
 const LIST_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -41,8 +43,10 @@ async function readListCache() {
     if (result.statusCode !== 200) return null;
     const text = await new Response(result.stream).text();
     const parsed = JSON.parse(text);
-    if (Date.now() - parsed.fetchedAt > LIST_CACHE_TTL_MS) return null;
-    return parsed.results;
+    return {
+      results: parsed.results,
+      isStale: Date.now() - parsed.fetchedAt > LIST_CACHE_TTL_MS,
+    };
   } catch {
     return null;
   }
@@ -104,8 +108,22 @@ export default async function handler(req, res) {
   try {
     const geocodeCache = await loadGeocodeCache();
 
-    let allLocations = await readListCache();
-    if (!allLocations) {
+    let allLocations;
+    const cached = await readListCache();
+    if (cached) {
+      allLocations = cached.results;
+      if (cached.isStale) {
+        // Serve the stale list immediately; refresh the cache after the
+        // response is sent so this visitor doesn't wait on HubSpot.
+        waitUntil(
+          fetchAllFromHubSpot()
+            .then(writeListCache)
+            .catch((error) => console.error('Background refresh failed:', error.message))
+        );
+      }
+    } else {
+      // Cache has never been populated — nothing to serve stale, so this
+      // one request pays the full fetch cost.
       allLocations = await fetchAllFromHubSpot();
       await writeListCache(allLocations);
     }

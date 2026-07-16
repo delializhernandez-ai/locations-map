@@ -30,11 +30,25 @@ async function readListCache() {
     if (result.statusCode !== 200) return null;
     const text = await new Response(result.stream).text();
     const parsed = JSON.parse(text);
-    if (Date.now() - parsed.fetchedAt > LIST_CACHE_TTL_MS) return null;
-    return parsed.results;
+    return {
+      results: parsed.results,
+      isStale: Date.now() - parsed.fetchedAt > LIST_CACHE_TTL_MS,
+    };
   } catch {
     return null;
   }
+}
+
+let refreshInFlight = false;
+function refreshListCacheInBackground() {
+  if (refreshInFlight) return;
+  refreshInFlight = true;
+  fetchAllFromHubSpot()
+    .then(writeListCache)
+    .catch((error) => console.error('Background refresh failed:', error.message))
+    .finally(() => {
+      refreshInFlight = false;
+    });
 }
 
 async function writeListCache(results) {
@@ -111,9 +125,16 @@ app.get('/api/locations', async (req, res) => {
   try {
     const geocodeCache = await loadGeocodeCache();
 
-    let allLocations = await readListCache();
-    if (allLocations) {
-      console.log('📦 Serving location list from cache');
+    let allLocations;
+    const cached = await readListCache();
+    if (cached) {
+      allLocations = cached.results;
+      if (cached.isStale) {
+        console.log('📦 Serving stale location list, refreshing in background');
+        refreshListCacheInBackground();
+      } else {
+        console.log('📦 Serving location list from cache');
+      }
     } else {
       allLocations = await fetchAllFromHubSpot();
       await writeListCache(allLocations);
