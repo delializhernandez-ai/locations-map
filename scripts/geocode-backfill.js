@@ -1,9 +1,10 @@
-// One-time backfill: geocode HubSpot locations missing coordinates and
-// write the results to data/geocoded-locations.json, keyed by record id.
-// api/locations.js reads this cache and merges it into each response so
-// the app never re-geocodes on page load.
+// Geocode HubSpot locations that are new or whose address changed since
+// the last run, and write the results to data/geocoded-locations.json,
+// keyed by record id. api/locations.js reads this cache and merges it
+// into each response so the app never re-geocodes on page load.
 //
 // Run locally: node scripts/geocode-backfill.js
+// Runs nightly via .github/workflows/geocode-backfill.yml
 import { config as loadEnv } from 'dotenv';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -80,6 +81,12 @@ async function fetchAllLocations() {
   return all;
 }
 
+function buildAddressKey(props) {
+  return [props.property_address, props.property_city, props.property_state, props.property_zip_code]
+    .filter(Boolean)
+    .join(', ');
+}
+
 async function geocodeAddress(address, city, state, zip) {
   const fullAddress = [address, city, state, zip].filter(Boolean).join(', ');
   if (!fullAddress) return null;
@@ -111,10 +118,29 @@ async function main() {
 
   const cache = await loadCache();
 
+  // Older cache entries predate address-drift detection and have no
+  // `address` fingerprint. Backfill it in place without re-geocoding.
+  let migrated = 0;
+  for (const record of allLocations) {
+    const cached = cache[record.id];
+    if (cached && !cached.address) {
+      cached.address = buildAddressKey(record.properties || {});
+      migrated++;
+    }
+  }
+  if (migrated > 0) {
+    await saveCache(cache);
+    console.log(`Migrated ${migrated} cache entries to include an address fingerprint.`);
+  }
+
   const missing = allLocations.filter((loc) => {
     const props = loc.properties || {};
     const hasAddress = props.property_address || props.property_city;
-    return !cache[loc.id] && hasAddress;
+    if (!hasAddress) return false;
+
+    const cached = cache[loc.id];
+    if (!cached) return true; // never geocoded
+    return cached.address !== buildAddressKey(props); // address changed since last geocode
   });
 
   console.log(
@@ -144,7 +170,7 @@ async function main() {
             props.property_zip_code
           );
           if (!coords) return { id: record.id, label, status: 'no_result' };
-          cache[record.id] = coords;
+          cache[record.id] = { ...coords, address: buildAddressKey(props) };
           return { id: record.id, label, status: 'geocoded' };
         } catch (error) {
           return { id: record.id, label, status: 'error', error: error.message };
