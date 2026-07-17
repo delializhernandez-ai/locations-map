@@ -30503,5 +30503,25 @@
     "lat": 40.4094095,
     "lng": -104.9980978,
     "address": "1710 Foxtrail Dr, Loveland, CO, 80538"
+  },
+  "58555400005": {
+    "lat": 39.1343593,
+    "lng": -84.5052589,
+    "address": "3010 Eden Ave , Cincinnati, OH, 45219"
+  },
+  "58201530140": {
+    "lat": 29.8984456,
+    "lng": -97.9090737,
+    "address": "1805 I 35 N Frontage Rd, San Marcos, TX 78666, San Marcos, TX, 78666"
+  },
+  "58696872550": {
+    "lat": 38.79424849999999,
+    "lng": -121.3566648,
+    "address": "1130 Harvey Way, Roseville, CA, 95747"
+  },
+  "58831727131": {
+    "lat": 40.548323,
+    "lng": -112.021382,
+    "address": "5464 W Center Field Dr, Jordan, UT, 84009"
   }
 }
