@@ -30442,7 +30442,7 @@
   "58540421760": {
     "lat": 32.4714831,
     "lng": -97.00515999999999,
-    "address": "999 Walter Stephenson Rd, Midlothian, TX 76065, Midlothian, TX 76065, Midlothian, TX, 76065"
+    "address": "999 Walter Stephenson Rd, Midlothian, TX 76065, Midlothian, TX 76065, Midlothian, TX 76065, Midlothian, TX, 76065"
   },
   "58492194180": {
     "lat": 28.1959773,
@@ -30523,5 +30523,20 @@
     "lat": 40.548323,
     "lng": -112.021382,
     "address": "5464 W Center Field Dr, Jordan, UT, 84009"
+  },
+  "58452600595": {
+    "lat": 35.0717112,
+    "lng": -80.84020079999999,
+    "address": "5030 Cardinal Spring Rd., Charlotte, NC, 28277"
+  },
+  "58771649078": {
+    "lat": 44.9721537,
+    "lng": -93.2646783,
+    "address": "615 S 8th St., Minneapolis, MN, 55404"
+  },
+  "58556899738": {
+    "lat": 39.1591674,
+    "lng": -84.44197179999999,
+    "address": "2710 Park Ave Ste 200, Norwood, OH, 45212"
   }
 }
