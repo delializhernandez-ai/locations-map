@@ -14,8 +14,10 @@ const LocationsMap = () => {
   const [filterState, setFilterState] = useState('');
   const [filterStatus, setFilterStatus] = useState('Active');
   const [filterVerticals, setFilterVerticals] = useState([]);
+  const [filterPackages, setFilterPackages] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
   const [verticalOptions, setVerticalOptions] = useState([]);
+  const [packageOptions, setPackageOptions] = useState([]);
   const [map, setMap] = useState(null);
   const clustererRef = useRef(null);
 
@@ -38,10 +40,12 @@ const LocationsMap = () => {
         // the dropdowns always reflect values that actually exist in HubSpot.
         const statuses = [...new Set(data.map((loc) => loc.status).filter(Boolean))].sort();
         const verticals = [...new Set(data.map((loc) => loc.vertical).filter(Boolean))].sort();
+        const packages = [...new Set(data.map((loc) => loc.geofencePackage).filter(Boolean))].sort();
         setLocations(data);
         setFilteredLocations(data);
         setStatusOptions(statuses);
         setVerticalOptions(verticals);
+        setPackageOptions(packages);
         setError(null);
       } catch (err) {
         setError(err.message);
@@ -81,8 +85,12 @@ const LocationsMap = () => {
       filtered = filtered.filter((loc) => filterVerticals.includes(loc.vertical));
     }
 
+    if (filterPackages.length > 0) {
+      filtered = filtered.filter((loc) => filterPackages.includes(loc.geofencePackage));
+    }
+
     setFilteredLocations(filtered);
-  }, [searchTerm, filterState, filterStatus, filterVerticals, locations]);
+  }, [searchTerm, filterState, filterStatus, filterVerticals, filterPackages, locations]);
 
   // Markers are built imperatively and added to the clusterer in one batch
   // instead of as individual React <Marker> components — with thousands of
@@ -209,6 +217,36 @@ const LocationsMap = () => {
           )}
         </div>
 
+        <div className="filter-container">
+          <label>Filter by Geofence Package:</label>
+          <div className="vertical-checkboxes">
+            {packageOptions.map((pkg) => (
+              <label key={pkg} className="vertical-checkbox">
+                <input
+                  type="checkbox"
+                  checked={filterPackages.includes(pkg)}
+                  onChange={(e) => {
+                    setFilterPackages(
+                      e.target.checked
+                        ? [...filterPackages, pkg]
+                        : filterPackages.filter((p) => p !== pkg)
+                    );
+                  }}
+                />
+                {pkg}
+              </label>
+            ))}
+          </div>
+          {filterPackages.length > 0 && (
+            <button
+              onClick={() => setFilterPackages([])}
+              className="clear-verticals"
+            >
+              Clear selection
+            </button>
+          )}
+        </div>
+
         <div className="results-info">
           {loading ? (
             <p>Loading locations...</p>
@@ -257,6 +295,11 @@ const LocationInfoWindow = ({ location }) => (
     {location.companyName && (
       <p>
         <strong>Company:</strong> {location.companyName}
+      </p>
+    )}
+    {location.geofencePackage && (
+      <p>
+        <strong>Geofence Package:</strong> {location.geofencePackage}
       </p>
     )}
     <p>

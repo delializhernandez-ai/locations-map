@@ -36,6 +36,7 @@ const convertToLocationObject = (hubspotObject) => {
     status: props.location_status || '',
     vertical: props.brand || '',
     companyName: props.location_company_name || '',
+    geofencePackage: props.package || '',
     zip: props.property_zip_code || '',
     lat: props.latitude ? parseFloat(props.latitude) : null,
     lng: props.longitude ? parseFloat(props.longitude) : null,
