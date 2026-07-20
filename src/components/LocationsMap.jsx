@@ -15,9 +15,15 @@ const LocationsMap = () => {
   const [filterStatus, setFilterStatus] = useState('Active');
   const [filterVerticals, setFilterVerticals] = useState([]);
   const [filterPackages, setFilterPackages] = useState([]);
+  const [filterBanners, setFilterBanners] = useState([]);
+  const [filterVideos, setFilterVideos] = useState([]);
+  const [filterFacebooks, setFilterFacebooks] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
   const [verticalOptions, setVerticalOptions] = useState([]);
   const [packageOptions, setPackageOptions] = useState([]);
+  const [bannerOptions, setBannerOptions] = useState([]);
+  const [videoOptions, setVideoOptions] = useState([]);
+  const [facebookOptions, setFacebookOptions] = useState([]);
   const [map, setMap] = useState(null);
   const clustererRef = useRef(null);
 
@@ -41,11 +47,17 @@ const LocationsMap = () => {
         const statuses = [...new Set(data.map((loc) => loc.status).filter(Boolean))].sort();
         const verticals = [...new Set(data.map((loc) => loc.vertical).filter(Boolean))].sort();
         const packages = [...new Set(data.map((loc) => loc.geofencePackage).filter(Boolean))].sort();
+        const banners = [...new Set(data.map((loc) => loc.creativeBanner).filter(Boolean))].sort();
+        const videos = [...new Set(data.map((loc) => loc.creativeVideo).filter(Boolean))].sort();
+        const facebooks = [...new Set(data.map((loc) => loc.facebook).filter(Boolean))].sort();
         setLocations(data);
         setFilteredLocations(data);
         setStatusOptions(statuses);
         setVerticalOptions(verticals);
         setPackageOptions(packages);
+        setBannerOptions(banners);
+        setVideoOptions(videos);
+        setFacebookOptions(facebooks);
         setError(null);
       } catch (err) {
         setError(err.message);
@@ -89,8 +101,30 @@ const LocationsMap = () => {
       filtered = filtered.filter((loc) => filterPackages.includes(loc.geofencePackage));
     }
 
+    if (filterBanners.length > 0) {
+      filtered = filtered.filter((loc) => filterBanners.includes(loc.creativeBanner));
+    }
+
+    if (filterVideos.length > 0) {
+      filtered = filtered.filter((loc) => filterVideos.includes(loc.creativeVideo));
+    }
+
+    if (filterFacebooks.length > 0) {
+      filtered = filtered.filter((loc) => filterFacebooks.includes(loc.facebook));
+    }
+
     setFilteredLocations(filtered);
-  }, [searchTerm, filterState, filterStatus, filterVerticals, filterPackages, locations]);
+  }, [
+    searchTerm,
+    filterState,
+    filterStatus,
+    filterVerticals,
+    filterPackages,
+    filterBanners,
+    filterVideos,
+    filterFacebooks,
+    locations,
+  ]);
 
   // Markers are built imperatively and added to the clusterer in one batch
   // instead of as individual React <Marker> components — with thousands of
@@ -187,65 +221,40 @@ const LocationsMap = () => {
           </select>
         </div>
 
-        <div className="filter-container">
-          <label>Filter by Business Vertical:</label>
-          <div className="vertical-checkboxes">
-            {verticalOptions.map((vertical) => (
-              <label key={vertical} className="vertical-checkbox">
-                <input
-                  type="checkbox"
-                  checked={filterVerticals.includes(vertical)}
-                  onChange={(e) => {
-                    setFilterVerticals(
-                      e.target.checked
-                        ? [...filterVerticals, vertical]
-                        : filterVerticals.filter((v) => v !== vertical)
-                    );
-                  }}
-                />
-                {vertical}
-              </label>
-            ))}
-          </div>
-          {filterVerticals.length > 0 && (
-            <button
-              onClick={() => setFilterVerticals([])}
-              className="clear-verticals"
-            >
-              Clear selection
-            </button>
-          )}
-        </div>
+        <CheckboxFilter
+          label="Filter by Business Vertical:"
+          options={verticalOptions}
+          selected={filterVerticals}
+          onChange={setFilterVerticals}
+        />
 
-        <div className="filter-container">
-          <label>Filter by Geofence Package:</label>
-          <div className="vertical-checkboxes">
-            {packageOptions.map((pkg) => (
-              <label key={pkg} className="vertical-checkbox">
-                <input
-                  type="checkbox"
-                  checked={filterPackages.includes(pkg)}
-                  onChange={(e) => {
-                    setFilterPackages(
-                      e.target.checked
-                        ? [...filterPackages, pkg]
-                        : filterPackages.filter((p) => p !== pkg)
-                    );
-                  }}
-                />
-                {pkg}
-              </label>
-            ))}
-          </div>
-          {filterPackages.length > 0 && (
-            <button
-              onClick={() => setFilterPackages([])}
-              className="clear-verticals"
-            >
-              Clear selection
-            </button>
-          )}
-        </div>
+        <CheckboxFilter
+          label="Filter by Geofence Package:"
+          options={packageOptions}
+          selected={filterPackages}
+          onChange={setFilterPackages}
+        />
+
+        <CheckboxFilter
+          label="Filter by Creative - Banner:"
+          options={bannerOptions}
+          selected={filterBanners}
+          onChange={setFilterBanners}
+        />
+
+        <CheckboxFilter
+          label="Filter by Creative - Video:"
+          options={videoOptions}
+          selected={filterVideos}
+          onChange={setFilterVideos}
+        />
+
+        <CheckboxFilter
+          label="Filter by Facebook:"
+          options={facebookOptions}
+          selected={filterFacebooks}
+          onChange={setFilterFacebooks}
+        />
 
         <div className="results-info">
           {loading ? (
@@ -297,11 +306,6 @@ const LocationInfoWindow = ({ location }) => (
         <strong>Company:</strong> {location.companyName}
       </p>
     )}
-    {location.geofencePackage && (
-      <p>
-        <strong>Geofence Package:</strong> {location.geofencePackage}
-      </p>
-    )}
     <p>
       <strong>Address:</strong>
       <br />
@@ -322,6 +326,55 @@ const LocationInfoWindow = ({ location }) => (
     <p>
       <strong>Zip:</strong> {location.zip}
     </p>
+    {location.geofencePackage && (
+      <p>
+        <strong>Geofence Package:</strong> {location.geofencePackage}
+      </p>
+    )}
+    {location.creativeBanner && (
+      <p>
+        <strong>Creative - Banner:</strong> {location.creativeBanner}
+      </p>
+    )}
+    {location.facebook && (
+      <p>
+        <strong>Facebook:</strong> {location.facebook}
+      </p>
+    )}
+    {location.creativeVideo && (
+      <p>
+        <strong>Creative - Video:</strong> {location.creativeVideo}
+      </p>
+    )}
+  </div>
+);
+
+const CheckboxFilter = ({ label, options, selected, onChange }) => (
+  <div className="filter-container">
+    <label>{label}</label>
+    <div className="vertical-checkboxes">
+      {options.map((option) => (
+        <label key={option} className="vertical-checkbox">
+          <input
+            type="checkbox"
+            checked={selected.includes(option)}
+            onChange={(e) => {
+              onChange(
+                e.target.checked
+                  ? [...selected, option]
+                  : selected.filter((v) => v !== option)
+              );
+            }}
+          />
+          {option}
+        </label>
+      ))}
+    </div>
+    {selected.length > 0 && (
+      <button onClick={() => onChange([])} className="clear-verticals">
+        Clear selection
+      </button>
+    )}
   </div>
 );
 

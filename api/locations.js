@@ -70,7 +70,7 @@ async function fetchAllFromHubSpot() {
   let after = null;
 
   while (true) {
-    let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,property_city,property_state,property_zip_code,location_status,brand,location_company_name,package`;
+    let url = `https://api.hubapi.com/crm/v3/objects/${HUBSPOT_OBJECT_TYPE}?limit=100&properties=property_name,property_address,property_address_2,property_city,property_state,property_zip_code,location_status,brand,location_company_name,package,creative___banner_selection,creative___video,facebook`;
     if (after) {
       url += `&after=${after}`;
     }

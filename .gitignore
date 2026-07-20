@@ -33,3 +33,6 @@ dist-ssr
 
 # Word temp/lock files
 ~$*
+
+# Data exports (point-in-time snapshots, not app source)
+Locations Missing From Map.xlsx
