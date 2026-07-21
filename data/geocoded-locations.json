@@ -25682,7 +25682,7 @@
   "47007286858": {
     "lat": 39.2861289,
     "lng": -76.6225291,
-    "address": "511 W Pratt Street, Baltimore, MD 21201"
+    "address": "511 W Pratt Street, Baltimore, MD 21201, Baltimore, MD, 21201"
   },
   "47007286872": {
     "lat": 35.893576,
@@ -30543,5 +30543,20 @@
     "lat": 40.7660004,
     "lng": -111.926794,
     "address": "125 S Navajo St, Salt Lake City, UT, 54104"
+  },
+  "57979483240": {
+    "lat": 33.4940965,
+    "lng": -111.9226261,
+    "address": "4000 N Drinkwater Blvd, Scottsdale, AZ, 85251"
+  },
+  "58853492900": {
+    "lat": 35.7884541,
+    "lng": -78.66986630000001,
+    "address": "2600 Hillsborough St, Raleigh, NC, 27607"
+  },
+  "59016136849": {
+    "lat": 34.0120229,
+    "lng": -117.6786847,
+    "address": "1234 Some street, Ontario, CA, 91710"
   }
 }
