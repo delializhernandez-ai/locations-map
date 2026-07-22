@@ -30558,5 +30558,55 @@
     "lat": 34.0120229,
     "lng": -117.6786847,
     "address": "1234 Some street, Ontario, CA, 91710"
+  },
+  "58730658862": {
+    "lat": 36.0721749,
+    "lng": -115.3002101,
+    "address": "9465 W Post Rd, Las Vegas, NV, 89148"
+  },
+  "58729910953": {
+    "lat": 36.0267706,
+    "lng": -115.049194,
+    "address": "1480 Paseo Verde Pkwy, Henderson, NV, 89012"
+  },
+  "58729114937": {
+    "lat": 36.004645,
+    "lng": -115.1226589,
+    "address": "10115 Jeffreys St., Las Vegas, NV, 89183"
+  },
+  "59119747724": {
+    "lat": 38.8651584,
+    "lng": -77.3668233,
+    "address": "12190 Waveland St, Fairfax, VA, 22033"
+  },
+  "58730926500": {
+    "lat": 36.1878635,
+    "lng": -115.2456027,
+    "address": "1501 Rock Springs Dr., Las Vegas, NV, 89128"
+  },
+  "58736370273": {
+    "lat": 30.6431551,
+    "lng": -96.3284341,
+    "address": "4475 Carter Creek Pkwy, Bryan, TX, 77802"
+  },
+  "58868292919": {
+    "lat": 36.1479558,
+    "lng": -79.8723254,
+    "address": "3311 Horse Pen Creek Road, Greensboro, NC, 27410"
+  },
+  "58820104966": {
+    "lat": 35.0970305,
+    "lng": -80.984141,
+    "address": "12509 Crown Park Ct, Charlotte, NC, 28273"
+  },
+  "59000471935": {
+    "lat": 39.3530932,
+    "lng": -76.6463772,
+    "address": "100 Hamill Rd., Baltimore, MD, 21210"
+  },
+  "58998795937": {
+    "lat": 42.2971646,
+    "lng": -83.7986442,
+    "address": "805 Heritage Woods Drive, Scio Township, MI, 48103"
   }
 }
