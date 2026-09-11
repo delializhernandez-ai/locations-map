@@ -1,0 +1,64 @@
+/* Matches the accent color and spacing used by the other filter panels in
+   LocationsMap.css (#4285f4 accent, .results-info-style match-count chip). */
+
+.top-clients-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+}
+
+.top-clients-toggle input {
+  accent-color: #4285f4;
+  cursor: pointer;
+  margin: 0;
+}
+
+.slider-wrap {
+  transition: opacity 0.2s;
+}
+
+.slider-wrap.slider-disabled {
+  opacity: 0.45;
+}
+
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.slider-value {
+  font-weight: 600;
+  color: #4285f4;
+}
+
+.top-clients-slider {
+  width: 100%;
+  accent-color: #4285f4;
+}
+
+.slider-scale-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.top-clients-match-count {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
