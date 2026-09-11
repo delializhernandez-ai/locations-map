@@ -1,0 +1,22 @@
+/* Matches the accent color and spacing used by the other filter panels in
+   LocationsMap.css (#4285f4 accent). The checkbox list itself reuses the
+   shared .vertical-checkboxes / .vertical-checkbox styles from
+   LocationsMap.css. */
+
+.top-clients-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+}
+
+.top-clients-toggle input {
+  accent-color: #4285f4;
+  cursor: pointer;
+  margin: 0;
+}
+
