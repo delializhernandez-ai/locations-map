@@ -26,6 +26,8 @@ const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
   const [bannerOptions, setBannerOptions] = useState([]);
   const [videoOptions, setVideoOptions] = useState([]);
   const [facebookOptions, setFacebookOptions] = useState([]);
+  const [selectedCompanies, setSelectedCompanies] = useState([]);
+  const [availableCompanies, setAvailableCompanies] = useState([]);
   const [map, setMap] = useState(null);
   const clustererRef = useRef(null);
 
@@ -136,6 +138,18 @@ const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
       filtered = filtered.filter((loc) => topClientCompanyNames.has(loc.companyName));
     }
 
+    // Companies list reflects everything still on the map after all filters
+    // above, but BEFORE the company checkboxes themselves are applied - so
+    // checking a box never removes other companies from the list.
+    const companiesInView = [
+      ...new Set(filtered.map((loc) => loc.companyName).filter(Boolean)),
+    ].sort();
+    setAvailableCompanies(companiesInView);
+
+    if (selectedCompanies.length > 0) {
+      filtered = filtered.filter((loc) => selectedCompanies.includes(loc.companyName));
+    }
+
     setFilteredLocations(filtered);
   }, [
     searchTerm,
@@ -147,6 +161,7 @@ const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
     filterVideos,
     filterFacebooks,
     topClientCompanyNames,
+    selectedCompanies,
     locations,
   ]);
 
@@ -285,6 +300,13 @@ const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
           onFilterChange={(filteredCompanies) =>
             setTopClientCompanyNames(new Set(filteredCompanies.map((c) => c.name)))
           }
+        />
+
+        <CheckboxFilter
+          label={`Companies Rendered (${availableCompanies.length}):`}
+          options={availableCompanies}
+          selected={selectedCompanies}
+          onChange={setSelectedCompanies}
         />
 
         <div className="results-info">
