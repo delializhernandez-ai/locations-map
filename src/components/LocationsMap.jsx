@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, LoadScript, InfoWindow } from '@react-google-maps/api';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { fetchLocations } from '../services/hubspotService';
+import TopClientsFilter from './TopClientsFilter';
 import './LocationsMap.css';
 
 const LocationsMap = () => {
@@ -19,6 +20,7 @@ const LocationsMap = () => {
   const [filterVideos, setFilterVideos] = useState([]);
   const [filterFacebooks, setFilterFacebooks] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
+const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
   const [verticalOptions, setVerticalOptions] = useState([]);
   const [packageOptions, setPackageOptions] = useState([]);
   const [bannerOptions, setBannerOptions] = useState([]);
@@ -37,7 +39,24 @@ const LocationsMap = () => {
     lng: -98.5795,
   };
 
-  useEffect(() => {
+// Companies aggregated from the full (unfiltered) location list, so the
+  // Top Clients slider reflects each company's overall footprint rather than
+  // shifting as other filters are applied. "Active locations" = locations
+  // whose status is 'Active'.
+  const companies = useMemo(() => {
+    const counts = new Map();
+    locations.forEach((loc) => {
+      if (!loc.companyName) return;
+      if (loc.status !== 'Active') return;
+      counts.set(loc.companyName, (counts.get(loc.companyName) || 0) + 1);
+    });
+    return Array.from(counts.entries()).map(([name, activeLocations]) => ({
+      name,
+      activeLocations,
+    }));
+  }, [locations]);
+
+    useEffect(() => {
     const loadLocations = async () => {
       try {
         setLoading(true);
@@ -113,6 +132,10 @@ const LocationsMap = () => {
       filtered = filtered.filter((loc) => filterFacebooks.includes(loc.facebook));
     }
 
+    if (topClientCompanyNames) {
+      filtered = filtered.filter((loc) => topClientCompanyNames.has(loc.companyName));
+    }
+
     setFilteredLocations(filtered);
   }, [
     searchTerm,
@@ -123,6 +146,7 @@ const LocationsMap = () => {
     filterBanners,
     filterVideos,
     filterFacebooks,
+    topClientCompanyNames,
     locations,
   ]);
 
@@ -254,6 +278,13 @@ const LocationsMap = () => {
           options={facebookOptions}
           selected={filterFacebooks}
           onChange={setFilterFacebooks}
+        />
+
+        <TopClientsFilter
+          companies={companies}
+          onFilterChange={(filteredCompanies) =>
+            setTopClientCompanyNames(new Set(filteredCompanies.map((c) => c.name)))
+          }
         />
 
         <div className="results-info">
