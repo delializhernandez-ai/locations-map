@@ -130,7 +130,12 @@ const LocationsMap = () => {
     }
 
     if (filterFacebooks.length > 0) {
-      filtered = filtered.filter((loc) => filterFacebooks.includes(loc.facebook));
+      filtered = filtered.filter((loc) => {
+        if (filterFacebooks.includes(loc.facebook)) return true;
+        // "No" also catches locations where the Facebook field was never
+        // set in HubSpot, so "unknown" isn't silently excluded.
+        return filterFacebooks.includes('No') && !loc.facebook;
+      });
     }
 
     // Companies list reflects everything still on the map after all filters
@@ -287,6 +292,7 @@ const LocationsMap = () => {
           options={facebookOptions}
           selected={filterFacebooks}
           onChange={setFilterFacebooks}
+          renderOption={(option) => (option === 'No' ? 'No / Unknown' : option)}
         />
 
         <TopClientsFilter
@@ -390,7 +396,7 @@ const LocationInfoWindow = ({ location }) => (
   </div>
 );
 
-const CheckboxFilter = ({ label, options, selected, onChange }) => (
+const CheckboxFilter = ({ label, options, selected, onChange, renderOption = (o) => o }) => (
   <div className="filter-container">
     <label>{label}</label>
     <div className="vertical-checkboxes">
@@ -407,7 +413,7 @@ const CheckboxFilter = ({ label, options, selected, onChange }) => (
               );
             }}
           />
-          {option}
+          {renderOption(option)}
         </label>
       ))}
     </div>
