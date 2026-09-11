@@ -20,7 +20,6 @@ const LocationsMap = () => {
   const [filterVideos, setFilterVideos] = useState([]);
   const [filterFacebooks, setFilterFacebooks] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
-const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
   const [verticalOptions, setVerticalOptions] = useState([]);
   const [packageOptions, setPackageOptions] = useState([]);
   const [bannerOptions, setBannerOptions] = useState([]);
@@ -134,10 +133,6 @@ const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
       filtered = filtered.filter((loc) => filterFacebooks.includes(loc.facebook));
     }
 
-    if (topClientCompanyNames) {
-      filtered = filtered.filter((loc) => topClientCompanyNames.has(loc.companyName));
-    }
-
     // Companies list reflects everything still on the map after all filters
     // above, but BEFORE the company checkboxes themselves are applied - so
     // checking a box never removes other companies from the list.
@@ -160,7 +155,6 @@ const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
     filterBanners,
     filterVideos,
     filterFacebooks,
-    topClientCompanyNames,
     selectedCompanies,
     locations,
   ]);
@@ -297,17 +291,11 @@ const [topClientCompanyNames, setTopClientCompanyNames] = useState(null);
 
         <TopClientsFilter
           companies={companies}
-          onFilterChange={(filteredCompanies) =>
-            setTopClientCompanyNames(new Set(filteredCompanies.map((c) => c.name)))
-          }
-        />
-
-        <CheckboxFilter
-          label={`Companies Rendered (${availableCompanies.length}):`}
-          options={availableCompanies}
+          availableCompanies={availableCompanies}
           selected={selectedCompanies}
           onChange={setSelectedCompanies}
         />
+
 
         <div className="results-info">
           {loading ? (
