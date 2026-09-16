@@ -4,35 +4,30 @@ import './TopClientsFilter.css';
 const TOP_N_OPTIONS = [10, 20, 30, 50];
 
 /**
- * Companies panel for the sidebar.
+ * "Show Top Clients Only" panel for the sidebar.
  *
- * By default this shows every company currently matching the other sidebar
- * filters ("Companies Rendered"), with checkboxes to further narrow which of
- * them render on the map.
- *
- * Checking "Show Top Clients Only" switches to a Top 10/20/30/50 cutoff:
- * picking a cutoff restricts the map to exactly those top companies (ranked
- * by each company's number of Active locations, largest first, matching the
- * HubSpot "Active Locations" report) and shows a numbered summary of who's
- * included, with their counts. Those counts refresh with the nightly HubSpot
- * sync, so the ranking - and who falls inside a given cutoff - can shift day
- * to day. Turning the toggle back off clears the cutoff-based selection and
- * returns to the plain "Companies Rendered" checkbox list.
+ * Off by default and shows nothing else. Checking it reveals a Top
+ * 10/20/30/50 cutoff: picking a cutoff restricts the map to exactly those
+ * top companies (ranked by each company's number of Active locations,
+ * largest first, matching the HubSpot "Active Locations" report) and shows
+ * a numbered summary of who's included, with their counts. Those counts
+ * refresh with the nightly HubSpot sync, so the ranking - and who falls
+ * inside a given cutoff - can shift day to day. Turning the toggle back off
+ * clears the cutoff-based selection so the map goes back to showing
+ * everything matching the other filters.
  *
  * Props:
  * - companies: array of { name, activeLocations } - one entry per company,
  *   with its total count of currently-Active locations (independent of the
  *   other sidebar filters).
  * - availableCompanies: array of company name strings currently matching
- *   every other active filter - this is what gets listed/ranked.
- * - selected: array of company names currently checked/selected, restricting
- *   the map to just those companies.
- * - onChange: callback(newSelectedArray).
+ *   every other active filter - this is what gets ranked.
+ * - onChange: callback(newSelectedArray) - called with the cutoff's company
+ *   names while the toggle is on, and with [] when it's turned off.
  */
 export default function TopClientsFilter({
   companies = [],
   availableCompanies = [],
-  selected = [],
   onChange,
 }) {
   const [sortByTopClients, setSortByTopClients] = useState(false);
@@ -72,7 +67,7 @@ export default function TopClientsFilter({
         <span>Show Top Clients Only</span>
       </label>
 
-      {sortByTopClients ? (
+      {sortByTopClients && (
         <>
           <div className="top-n-buttons">
             {TOP_N_OPTIONS.map((n) => (
@@ -93,32 +88,6 @@ export default function TopClientsFilter({
               <li key={name}>{`${name} (${countByName.get(name) || 0})`}</li>
             ))}
           </ol>
-        </>
-      ) : (
-        <>
-          <label>{`Companies Rendered (${availableCompanies.length}):`}</label>
-          <div className="vertical-checkboxes">
-            {availableCompanies.map((name) => (
-              <label key={name} className="vertical-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selected.includes(name)}
-                  onChange={(e) => {
-                    onChange(
-                      e.target.checked ? [...selected, name] : selected.filter((v) => v !== name)
-                    );
-                  }}
-                />
-                {name}
-              </label>
-            ))}
-          </div>
-
-          {selected.length > 0 && (
-            <button onClick={() => onChange([])} className="clear-verticals">
-              Clear selection
-            </button>
-          )}
         </>
       )}
     </div>
