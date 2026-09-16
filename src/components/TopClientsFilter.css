@@ -1,6 +1,6 @@
 /* Matches the accent color and spacing used by the other filter panels in
-   LocationsMap.css (#4285f4 accent). The checkbox list itself reuses the
-   shared .vertical-checkboxes / .vertical-checkbox styles from
+   LocationsMap.css (#4285f4 accent). The alphabetical checkbox list reuses
+   the shared .vertical-checkboxes / .vertical-checkbox styles from
    LocationsMap.css. */
 
 .top-clients-toggle {
@@ -20,3 +20,43 @@
   margin: 0;
 }
 
+.top-n-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.top-n-button {
+  flex: 1 1 auto;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4285f4;
+  background: #fff;
+  border: 1px solid #4285f4;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.top-n-button:hover {
+  background: #eef4fe;
+}
+
+.top-n-button.active {
+  color: #fff;
+  background: #4285f4;
+}
+
+.top-clients-summary {
+  margin: 0;
+  padding-left: 20px;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: #333;
+}
+
+.top-clients-summary li {
+  padding: 2px 0;
+}
