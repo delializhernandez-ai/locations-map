@@ -224,6 +224,12 @@ const LocationsMap = () => {
           />
         </div>
 
+        <TopClientsFilter
+          companies={companies}
+          availableCompanies={availableCompanies}
+          onChange={setSelectedCompanies}
+        />
+
         <div className="filter-container">
           <label htmlFor="state-filter">Filter by State:</label>
           <select
@@ -294,14 +300,6 @@ const LocationsMap = () => {
           onChange={setFilterFacebooks}
           renderOption={(option) => (option === 'No' ? 'No / Unknown' : option)}
         />
-
-        <TopClientsFilter
-          companies={companies}
-          availableCompanies={availableCompanies}
-          selected={selectedCompanies}
-          onChange={setSelectedCompanies}
-        />
-
 
         <div className="results-info">
           {loading ? (
